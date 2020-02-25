@@ -28,7 +28,7 @@ bool Number::equals(Expression *expr) {
 }
 
 Value* Number::evaluate() {
-
+    
     return new NumericValue(this->value);
 }
 
@@ -47,6 +47,11 @@ Expression* Number::simplify() {
     }
     
     return this;
+}
+
+string Number::toString() {
+    
+    return to_string(this->value);
 }
 
 Add::Add(Expression *lhs, Expression *rhs) {
@@ -106,6 +111,11 @@ Expression* Add::simplify() {
     return new Add(lhs, rhs);
 }
 
+string Add::toString() {
+    
+    return (this->leftHandSide->toString() + " + " + this->rightHandSide->toString());
+}
+
 Multiply::Multiply (Expression *lhs, Expression *rhs) {
     
     this->leftHandSide = lhs;
@@ -161,6 +171,11 @@ Expression* Multiply::simplify() {
     return new Multiply(lhs, rhs);
 }
 
+string Multiply::toString() {
+    
+    return (this->leftHandSide->toString() + " * " + this->rightHandSide->toString());
+}
+
 Variable::Variable(string inputName) {
     
     this->name = inputName;
@@ -202,8 +217,13 @@ Expression* Variable::simplify() {
     return this;
 }
 
-BoolExpression::BoolExpression(bool conditional) {
+string Variable::toString() {
+    
+    return this->name;
+}
 
+BoolExpression::BoolExpression(bool conditional) {
+    
     this->boolean = conditional;
 }
 
@@ -211,9 +231,9 @@ bool BoolExpression::equals(Expression* expr) {
     
     BoolExpression* b = dynamic_cast<BoolExpression*>(expr);
     if (b == NULL)
-      return false;
+        return false;
     else
-    return (this->boolean == b->boolean);
+        return (this->boolean == b->boolean);
 }
 
 Value* BoolExpression::evaluate() {
@@ -236,6 +256,11 @@ Expression* BoolExpression::simplify() {
     return this;
 }
 
+string BoolExpression::toString() {
+    
+    return this->boolean ? "true" : "false";
+}
+
 LetExpression::LetExpression(Variable* substituteVariable, Expression* substituteValue, Expression* substituteBody) {
     
     this->subVariable = substituteVariable;
@@ -247,9 +272,9 @@ bool LetExpression::equals(Expression *expr) {
     
     LetExpression* letExpr = dynamic_cast<LetExpression*>(expr);
     if (letExpr == NULL)
-      return false;
+        return false;
     else
-    return (this->subVariable->equals(letExpr->subVariable) && this->subExpression->equals(letExpr->subExpression) && this->subBody->equals(letExpr->subBody));
+        return (this->subVariable->equals(letExpr->subVariable) && this->subExpression->equals(letExpr->subExpression) && this->subBody->equals(letExpr->subBody));
 }
 
 Value* LetExpression::evaluate() {
@@ -265,7 +290,7 @@ bool LetExpression::containsVariables() {
 
 Expression* LetExpression::substitute(string variable, Value* value) {
     
-    return new LetExpression(new Variable(variable), subExpression->substitute(variable, value), subBody->substitute(variable, value));
+    return new LetExpression(subVariable, subExpression->substitute(variable, value), subBody->substitute(variable, value));
 }
 
 Expression* LetExpression::simplify() {
@@ -273,12 +298,17 @@ Expression* LetExpression::simplify() {
     return new LetExpression(subVariable, subExpression->simplify(), subBody->simplify());
 }
 
+string LetExpression::toString() {
+    
+    return "_let " + this->subVariable->toString() + " = " + this->subExpression->toString() + " _in " + this->subBody->toString();
+}
+
 TEST_CASE( "equals" ) {
     
-  CHECK( (new Number(1))->equals(new Number(1)) );
-  CHECK( ! (new Number(1))->equals(new Number(2)) );
-  CHECK( ! (new Number(1))->equals(new Multiply(new Number(2), new Number(4))) );
-  CHECK( (new Variable("x"))->equals(new Variable("x")) );
+    CHECK( (new Number(1))->equals(new Number(1)) );
+    CHECK( ! (new Number(1))->equals(new Number(2)) );
+    CHECK( ! (new Number(1))->equals(new Multiply(new Number(2), new Number(4))) );
+    CHECK( (new Variable("x"))->equals(new Variable("x")) );
 }
 
 TEST_CASE( "evaluate" ) {
@@ -287,6 +317,10 @@ TEST_CASE( "evaluate" ) {
     CHECK( (new Add(new Number(6), new Number(4)) )->evaluate()->equals(new NumericValue(10)) );
     CHECK( (new Add(new Number(2), (new Multiply(new Number(6), new Number(4) )) ))->evaluate()->equals(new NumericValue(26)));
     CHECK( (new LetExpression(new Variable("x"), new Number(5), (new Add (new Variable("x"), new Number(11)))))->evaluate()->equals(new NumericValue(16)));
+    CHECK( (new LetExpression(new Variable("y"), new Number(2), (new Add(new Variable("x"), new Variable("y")) )) )->substitute("x", new NumericValue(1))->equals(new LetExpression(new Variable("y"), new Number(2), (new Add(new Number(1), new Variable("y"))))) );
+    
+    //nested substitution
+    CHECK( ( new LetExpression(new Variable("x"), new Number(1), (new LetExpression(new Variable("y"), new Number(2), (new Add(new Variable("x"), new Variable("y")) )) )) )->evaluate()->equals(new NumericValue(3)) );
 }
 
 TEST_CASE( "contains Variables" ) {
@@ -326,6 +360,15 @@ TEST_CASE( "simplify" ) {
     CHECK( (new Add(new Variable("one"), (new Multiply(new Number(6), new Number(4) )) ))->simplify()->equals(new Add(new Variable("one"), new Number(24))) );
     
     //check LetExpressions
-//    CHECK( (new LetExpression(new Variable("x"), new Number(5), (new Add (new Variable("x"), new Number(11)))))->simplify()->equals((new LetExpression(new Variable("x"), new Number(5), (new Add (new Number(5), new Number(11)))))) );
+    //    CHECK( (new LetExpression(new Variable("x"), new Number(5), (new Add (new Variable("x"), new Number(11)))))->simplify()->equals((new LetExpression(new Variable("x"), new Number(5), (new Add (new Number(5), new Number(11)))))) );
+}
+
+TEST_CASE( "toString" ) {
     
+    CHECK( (new Number(25))->toString() == "25");
+    CHECK( (new Variable("variable"))->toString() == "variable");
+    CHECK( (new Add(new Number(6), new Number(4)) )->toString() == "6 + 4");
+    CHECK( (new Multiply (new Number(12), new Number(11)))->toString() == "12 * 11");
+    CHECK( (new LetExpression(new Variable("x"), new Number(5), (new Add (new Variable("x"), new Number(11)))))->toString() == "_let x = 5 _in x + 11");
+    CHECK( ( new LetExpression(new Variable("x"), new Number(1), (new LetExpression(new Variable("y"), new Number(2), (new Add(new Variable("x"), new Variable("y")) )) )) )->toString() == "_let x = 1 _in _let y = 2 _in x + y");
 }

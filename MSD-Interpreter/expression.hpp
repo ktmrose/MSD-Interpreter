@@ -27,6 +27,7 @@ public:
     virtual bool containsVariables() = 0;
     virtual Expression* substitute(string variable, Value* value) = 0;
     virtual Expression* simplify() = 0;
+    virtual string toString() = 0;
 };
 
 /*
@@ -42,6 +43,7 @@ public:
     bool containsVariables() override;
     Expression* substitute(string variable, Value* value) override;
     Expression* simplify() override;
+    string toString() override;
 };
 
 /*
@@ -57,6 +59,7 @@ public:
     bool containsVariables() override;
     Expression* substitute(string variable, Value* value) override;
     Expression* simplify() override;
+    string toString() override;
 };
 
 /*
@@ -74,6 +77,7 @@ public:
     bool containsVariables() override;
     Expression* substitute(string variable, Value* value) override;
     Expression* simplify() override;
+    string toString() override;
 };
 
 /*
@@ -91,6 +95,7 @@ public:
     bool containsVariables() override;
     Expression* substitute(string variable, Value* value) override;
     Expression* simplify() override;
+    string toString() override;
 };
 
 class BoolExpression : public Expression {
@@ -103,6 +108,7 @@ public:
     bool containsVariables() override;
     Expression * substitute(string variable, Value *value) override;
     Expression* simplify() override;
+    string toString() override;
 };
 
 class LetExpression : public Expression {
@@ -117,6 +123,7 @@ public:
     bool containsVariables() override;
     Expression* substitute(string variable, Value* value) override;
     Expression* simplify() override;
+    string toString() override;
 };
 
 #endif
